@@ -62,9 +62,13 @@ func NewController() Controller{
 				[]string {
 					"/motor_vehicle/5",
 					"/motor_vehicle/8",
+					"/cycle/1",
+					"/cycle/4",
+					"/foot/1",
+					"/foot/8",
 				},
 				0,
-				0,
+            	0,
 			},
 			"/motor_vehicle/2": {
 				map[string]int {
@@ -81,9 +85,13 @@ func NewController() Controller{
 					"/motor_vehicle/9",
 					"/motor_vehicle/10",
 					"/motor_vehicle/11",
+					"/cycle/1",
+					"/cycle/3",
+					"/foot/1",
+					"/foot/6",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/3": {
 				map[string]int {
@@ -100,9 +108,13 @@ func NewController() Controller{
 					"/motor_vehicle/8",
 					"/motor_vehicle/10",
 					"/motor_vehicle/11",
+					"/cycle/1",
+					"/cycle/2",
+					"/foot/1",
+					"/foot/4",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/4": {
 				map[string]int {
@@ -116,9 +128,13 @@ func NewController() Controller{
 				[]string {
 					"/motor_vehicle/8",
 					"/motor_vehicle/11",
+					"/cycle/1",
+					"/cycle/2",
+					"/foot/2",
+					"/foot/3",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/5": {
 				map[string]int {
@@ -139,9 +155,13 @@ func NewController() Controller{
 					"/motor_vehicle/3",
 					"/motor_vehicle/8",
 					"/motor_vehicle/11",
+					"/cycle/2",
+					"/cycle/4",
+					"/foot/3",
+					"/foot/8",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/6": {
 				map[string]int {
@@ -158,9 +178,13 @@ func NewController() Controller{
 					"/motor_vehicle/8",
 					"/motor_vehicle/9",
 					"/motor_vehicle/10",
+					"/cycle/2",
+					"/cycle/3",
+					"/foot/3",
+					"/foot/6",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/7": {
 				map[string]int {
@@ -176,9 +200,13 @@ func NewController() Controller{
 				[]string {
 					"/motor_vehicle/3",
 					"/motor_vehicle/10",
+					"/cycle/2",
+					"/cycle/3",
+					"/foot/4",
+					"/foot/5",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/8": {
 				map[string]int {
@@ -197,9 +225,15 @@ func NewController() Controller{
 					"/motor_vehicle/6",
 					"/motor_vehicle/10",
 					"/motor_vehicle/11",
+					"/cycle/1",
+					"/cycle/3",
+					"/cycle/4",
+					"/foot/2",
+					"/foot/5",
+					"/foot/8",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/9": {
 				map[string]int {
@@ -213,9 +247,13 @@ func NewController() Controller{
 				[]string {
 					"/motor_vehicle/2",
 					"/motor_vehicle/6",
+					"/cycle/3",
+					"/cycle/4",
+					"/foot/6",
+					"/foot/7",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/10": {
 				map[string]int {
@@ -236,9 +274,13 @@ func NewController() Controller{
 					"/motor_vehicle/6",
 					"/motor_vehicle/7",
 					"/motor_vehicle/8",
+					"/cycle/2",
+					"/cycle/4",
+					"/foot/4",
+					"/foot/7",
 				},
 				0,
-				0,
+                0,
 			},
 			"/motor_vehicle/11": {
 				map[string]int {
@@ -255,9 +297,53 @@ func NewController() Controller{
 					"/motor_vehicle/4",
 					"/motor_vehicle/5",
 					"/motor_vehicle/8",
+					"/cycle/1",
+					"/cycle/4",
+					"/foot/2",
+					"/foot/7",
 				},
 				0,
+                0,
+			},
+			"/motor_vehicle/12": {
+				map[string]int {
+					"/light/1": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+				},
+				[]string {
+					"/motor_vehicle/7",
+					"/motor_vehicle/8",
+					"/motor_vehicle/9",
+				},
 				0,
+                0,
+			},
+			"/motor_vehicle/13": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+				},
+				[]string {
+					"/vessel/1",
+					"/vessel/2",
+				},
+				0,
+                0,
+			},
+			"/motor_vehicle/14": {
+				map[string]int {
+				},
+				map[string]bool {
+					"/sensor/1": false,
+				},
+				[]string {
+				},
+				0,
+                0,
 			},
 			"/cycle/1": {
 				map[string]int {
@@ -266,9 +352,262 @@ func NewController() Controller{
 				map[string]bool {
 					"/sensor/1": false,
 				},
-				[]string{},
+				[]string {
+					"/motor_vehicle/1",
+					"/motor_vehicle/2",
+					"/motor_vehicle/3",
+					"/motor_vehicle/4",
+					"/motor_vehicle/8",
+					"/motor_vehicle/11",
+				},
 				0,
+                0,
+			},
+			"/cycle/2": {
+				map[string]int {
+					"/light/1": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+				},
+				[]string {
+					"/motor_vehicle/3",
+					"/motor_vehicle/4",
+					"/motor_vehicle/5",
+					"/motor_vehicle/6",
+					"/motor_vehicle/7",
+					"/motor_vehicle/10",
+				},
 				0,
+                0,
+			},
+			"/cycle/3": {
+				map[string]int {
+					"/light/1": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+				},
+				[]string {
+					"/motor_vehicle/2",
+					"/motor_vehicle/6",
+					"/motor_vehicle/7",
+					"/motor_vehicle/8",
+					"/motor_vehicle/9",
+				},
+				0,
+                0,
+			},
+			"/cycle/4": {
+				map[string]int {
+					"/light/1": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+				},
+				[]string {
+					"/motor_vehicle/1",
+					"/motor_vehicle/5",
+					"/motor_vehicle/8",
+					"/motor_vehicle/9",
+					"/motor_vehicle/10",
+					"/motor_vehicle/11",
+				},
+				0,
+                0,
+			},
+			"/cycle/5": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+				},
+				[]string {
+					"/vessel/1",
+					"/vessel/2",
+				},
+				0,
+                0,
+			},
+			"/foot/1": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/1",
+					"/motor_vehicle/2",
+					"/motor_vehicle/3",
+				},
+				0,
+                0,
+			},
+			"/foot/2": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/4",
+					"/motor_vehicle/8",
+					"/motor_vehicle/11",
+				},
+				0,
+                0,
+			},
+			"/foot/3": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/4",
+					"/motor_vehicle/5",
+					"/motor_vehicle/6",
+				},
+				0,
+                0,
+			},
+			"/foot/4": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/3",
+					"/motor_vehicle/7",
+					"/motor_vehicle/10",
+				},
+				0,
+                0,
+			},
+			"/foot/5": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/7",
+					"/motor_vehicle/8",
+				},
+				0,
+                0,
+			},
+			"/foot/6": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/2",
+					"/motor_vehicle/6",
+					"/motor_vehicle/9",
+				},
+				0,
+                0,
+			},
+			"/foot/7": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/9",
+					"/motor_vehicle/10",
+					"/motor_vehicle/11",
+				},
+				0,
+                0,
+			},
+			"/foot/8": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+					"/sensor/2": false,
+				},
+				[]string {
+					"/motor_vehicle/1",
+					"/motor_vehicle/5",
+					"/motor_vehicle/8",
+				},
+				0,
+                0,
+			},
+			"/foot/9": {
+				map[string]int {
+					"/light/1": 0,
+					"/light/2": 0,
+				},
+				map[string]bool {
+				},
+				[]string {
+					"/vessel/1",
+					"/vessel/2",
+				},
+				0,
+                0,
+			},
+			"/vessel/1": {
+				map[string]int {
+					"/light/1": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+				},
+				[]string {
+					"/motor_vehicle/13",
+					"/cycle/5",
+					"/foot/9",
+				},
+				0,
+                0,
+			},
+			"/vessel/2": {
+				map[string]int {
+					"/light/1": 0,
+				},
+				map[string]bool {
+					"/sensor/1": false,
+				},
+				[]string {
+					"/motor_vehicle/13",
+					"/cycle/5",
+					"/foot/9",
+				},
+				0,
+                0,
 			},
 		},
 		&sync.Mutex{},
@@ -328,7 +667,7 @@ func (c *Controller) updateScores() {
 
 		if trafficGroup.BaseScore >= 1 {
 			c.Mutex.Lock()
-			c.TrafficGroups[trafficGroupName].TimeScore += 0.003472
+			c.TrafficGroups[trafficGroupName].TimeScore += 0.004167
 			c.Mutex.Unlock()
 		}
 	}
@@ -338,7 +677,7 @@ func (c Controller) GenerateSolutions() []TrafficSolution {
 	var solutions []TrafficSolution
 
 	for trafficGroupName, trafficGroup := range c.TrafficGroups {
-		score := trafficGroup.BaseScore + trafficGroup.TimeScore
+		score := trafficGroup.BaseScore * trafficGroup.TimeScore
 		solution := TrafficSolution {
 			[]string { trafficGroupName },
 			trafficGroup.ExcludedGroups,
@@ -363,7 +702,7 @@ func (c Controller) generateSolutionsRecurse(currentSolution TrafficSolution) Tr
 
 			currentSolution.TrafficGroups = append(currentSolution.TrafficGroups, trafficGroupName)
 			currentSolution.ExcludedGroups = append(currentSolution.ExcludedGroups, trafficGroup.ExcludedGroups...)
-			currentSolution.Score += trafficGroup.BaseScore + trafficGroup.TimeScore
+			currentSolution.Score += trafficGroup.BaseScore * trafficGroup.TimeScore
 
 			currentSolution = c.generateSolutionsRecurse(currentSolution)
 		}
@@ -421,7 +760,7 @@ func (c *Controller) process() []mqttMessage {
 		solution := solutions[0]
 
 		if solution.Score > 0 {
-			for _, rangeSolution := range(solutions) {
+			for _, rangeSolution := range solutions {
 				fmt.Println("Groups:", rangeSolution.TrafficGroups, "- Score:", rangeSolution.Score)
 			}
 			fmt.Println()
