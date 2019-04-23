@@ -11,12 +11,10 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
-
 type mqttMessage struct {
-	topic string
+	topic   string
 	payload string
 }
-
 
 var con = NewController()
 
@@ -36,7 +34,7 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	opts := MQTT.NewClientOptions().AddBroker("ssl://broker.0f.nl:8883")
-	opts.SetClientID("go-test")
+	opts.SetClientID("")
 	opts.SetDefaultPublishHandler(f)
 	opts.SetTLSConfig(&tls.Config{})
 	topic := "5/#"
@@ -57,12 +55,12 @@ func main() {
 
 	for {
 		select {
-			case msgs := <- mc:
-				for _, msg := range msgs {
-					client.Publish(msg.topic, byte(1), false, msg.payload)
-				}
-			case <- quit:
-				return
+		case msgs := <-mc:
+			for _, msg := range msgs {
+				client.Publish(msg.topic, byte(1), false, msg.payload)
+			}
+		case <-quit:
+			return
 		}
 	}
 }

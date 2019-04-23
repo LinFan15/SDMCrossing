@@ -2,28 +2,18 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
 
-type TrafficGroup struct {
-	Lights map[string]int
-	Sensors map[string]bool
-	ExcludedGroups []string
-	BaseScore float64
-	TimeScore float64
-}
-
-
 type TrafficSolution struct {
-	TrafficGroups []string
+	TrafficGroups  []string
 	ExcludedGroups []string
-	Score float64
+	Score          float64
 }
-
 
 type ByScore []TrafficSolution
 
@@ -39,577 +29,17 @@ func (s ByScore) Less(i, j int) bool {
 	return s[i].Score < s[j].Score
 }
 
-
 type Controller struct {
-	TrafficGroups map[string]*TrafficGroup
-	Mutex *sync.Mutex
+	TrafficGroups   map[string]*TrafficGroup
+	Mutex           *sync.Mutex
 	CurrentSolution TrafficSolution
-	InMotion bool
-	ElapsedTime int64
+	InMotion        bool
+	ElapsedTime     int64
 }
 
-func NewController() Controller{
-	return Controller {
-		map[string]*TrafficGroup {
-			"/motor_vehicle/1": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/5",
-					"/motor_vehicle/8",
-					"/cycle/1",
-					"/cycle/4",
-					"/foot/1",
-					"/foot/8",
-				},
-				0,
-            	0,
-			},
-			"/motor_vehicle/2": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/5",
-					"/motor_vehicle/6",
-					"/motor_vehicle/8",
-					"/motor_vehicle/9",
-					"/motor_vehicle/10",
-					"/motor_vehicle/11",
-					"/cycle/1",
-					"/cycle/3",
-					"/foot/1",
-					"/foot/6",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/3": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/5",
-					"/motor_vehicle/6",
-					"/motor_vehicle/7",
-					"/motor_vehicle/8",
-					"/motor_vehicle/10",
-					"/motor_vehicle/11",
-					"/cycle/1",
-					"/cycle/2",
-					"/foot/1",
-					"/foot/4",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/4": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-					"/sensor/3": false,
-				},
-				[]string {
-					"/motor_vehicle/8",
-					"/motor_vehicle/11",
-					"/cycle/1",
-					"/cycle/2",
-					"/foot/2",
-					"/foot/3",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/5": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-					"/sensor/3": false,
-					"/sensor/4": false,
-					"/sensor/5": false,
-					"/sensor/6": false,
-				},
-				[]string {
-					"/motor_vehicle/1",
-					"/motor_vehicle/2",
-					"/motor_vehicle/3",
-					"/motor_vehicle/8",
-					"/motor_vehicle/11",
-					"/cycle/2",
-					"/cycle/4",
-					"/foot/3",
-					"/foot/8",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/6": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-					"/sensor/3": false,
-				},
-				[]string {
-					"/motor_vehicle/2",
-					"/motor_vehicle/3",
-					"/motor_vehicle/8",
-					"/motor_vehicle/9",
-					"/motor_vehicle/10",
-					"/cycle/2",
-					"/cycle/3",
-					"/foot/3",
-					"/foot/6",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/7": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-					"/sensor/3": false,
-					"/sensor/4": false,
-				},
-				[]string {
-					"/motor_vehicle/3",
-					"/motor_vehicle/10",
-					"/cycle/2",
-					"/cycle/3",
-					"/foot/4",
-					"/foot/5",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/8": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/1",
-					"/motor_vehicle/2",
-					"/motor_vehicle/3",
-					"/motor_vehicle/4",
-					"/motor_vehicle/5",
-					"/motor_vehicle/6",
-					"/motor_vehicle/10",
-					"/motor_vehicle/11",
-					"/cycle/1",
-					"/cycle/3",
-					"/cycle/4",
-					"/foot/2",
-					"/foot/5",
-					"/foot/8",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/9": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-					"/sensor/3": false,
-				},
-				[]string {
-					"/motor_vehicle/2",
-					"/motor_vehicle/6",
-					"/cycle/3",
-					"/cycle/4",
-					"/foot/6",
-					"/foot/7",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/10": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-					"/sensor/3": false,
-					"/sensor/4": false,
-					"/sensor/5": false,
-					"/sensor/6": false,
-				},
-				[]string {
-					"/motor_vehicle/2",
-					"/motor_vehicle/3",
-					"/motor_vehicle/6",
-					"/motor_vehicle/7",
-					"/motor_vehicle/8",
-					"/cycle/2",
-					"/cycle/4",
-					"/foot/4",
-					"/foot/7",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/11": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-					"/sensor/3": false,
-				},
-				[]string {
-					"/motor_vehicle/2",
-					"/motor_vehicle/3",
-					"/motor_vehicle/4",
-					"/motor_vehicle/5",
-					"/motor_vehicle/8",
-					"/cycle/1",
-					"/cycle/4",
-					"/foot/2",
-					"/foot/7",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/12": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-					"/motor_vehicle/7",
-					"/motor_vehicle/8",
-					"/motor_vehicle/9",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/13": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-				},
-				[]string {
-					"/vessel/1",
-					"/vessel/2",
-				},
-				0,
-                0,
-			},
-			"/motor_vehicle/14": {
-				map[string]int {
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-				},
-				0,
-                0,
-			},
-			"/cycle/1": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-					"/motor_vehicle/1",
-					"/motor_vehicle/2",
-					"/motor_vehicle/3",
-					"/motor_vehicle/4",
-					"/motor_vehicle/8",
-					"/motor_vehicle/11",
-				},
-				0,
-                0,
-			},
-			"/cycle/2": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-					"/motor_vehicle/3",
-					"/motor_vehicle/4",
-					"/motor_vehicle/5",
-					"/motor_vehicle/6",
-					"/motor_vehicle/7",
-					"/motor_vehicle/10",
-				},
-				0,
-                0,
-			},
-			"/cycle/3": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-					"/motor_vehicle/2",
-					"/motor_vehicle/6",
-					"/motor_vehicle/7",
-					"/motor_vehicle/8",
-					"/motor_vehicle/9",
-				},
-				0,
-                0,
-			},
-			"/cycle/4": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-					"/motor_vehicle/1",
-					"/motor_vehicle/5",
-					"/motor_vehicle/8",
-					"/motor_vehicle/9",
-					"/motor_vehicle/10",
-					"/motor_vehicle/11",
-				},
-				0,
-                0,
-			},
-			"/cycle/5": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-				},
-				[]string {
-					"/vessel/1",
-					"/vessel/2",
-				},
-				0,
-                0,
-			},
-			"/foot/1": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/1",
-					"/motor_vehicle/2",
-					"/motor_vehicle/3",
-				},
-				0,
-                0,
-			},
-			"/foot/2": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/4",
-					"/motor_vehicle/8",
-					"/motor_vehicle/11",
-				},
-				0,
-                0,
-			},
-			"/foot/3": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/4",
-					"/motor_vehicle/5",
-					"/motor_vehicle/6",
-				},
-				0,
-                0,
-			},
-			"/foot/4": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/3",
-					"/motor_vehicle/7",
-					"/motor_vehicle/10",
-				},
-				0,
-                0,
-			},
-			"/foot/5": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/7",
-					"/motor_vehicle/8",
-				},
-				0,
-                0,
-			},
-			"/foot/6": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/2",
-					"/motor_vehicle/6",
-					"/motor_vehicle/9",
-				},
-				0,
-                0,
-			},
-			"/foot/7": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/9",
-					"/motor_vehicle/10",
-					"/motor_vehicle/11",
-				},
-				0,
-                0,
-			},
-			"/foot/8": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-					"/sensor/2": false,
-				},
-				[]string {
-					"/motor_vehicle/1",
-					"/motor_vehicle/5",
-					"/motor_vehicle/8",
-				},
-				0,
-                0,
-			},
-			"/foot/9": {
-				map[string]int {
-					"/light/1": 0,
-					"/light/2": 0,
-				},
-				map[string]bool {
-				},
-				[]string {
-					"/vessel/1",
-					"/vessel/2",
-				},
-				0,
-                0,
-			},
-			"/vessel/1": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-					"/motor_vehicle/13",
-					"/cycle/5",
-					"/foot/9",
-				},
-				0,
-                0,
-			},
-			"/vessel/2": {
-				map[string]int {
-					"/light/1": 0,
-				},
-				map[string]bool {
-					"/sensor/1": false,
-				},
-				[]string {
-					"/motor_vehicle/13",
-					"/cycle/5",
-					"/foot/9",
-				},
-				0,
-                0,
-			},
-		},
+func NewController() Controller {
+	return Controller{
+		trafficModel,
 		&sync.Mutex{},
 		TrafficSolution{},
 		false,
@@ -618,26 +48,18 @@ func NewController() Controller{
 }
 
 func (c *Controller) SetSensorState(sensorName string, state bool) {
-	splitSensorName := strings.SplitN(sensorName, "/", 4)
-	splitTrafficGroup := splitSensorName[:len(splitSensorName) - 1]
-
-	trafficGroup := strings.Join(splitTrafficGroup, "/")
-	relSensorName := "/" + splitSensorName[len(splitSensorName) - 1]
+	parsedSensorName := parseAbsoluteName(sensorName)
 
 	c.Mutex.Lock()
-	c.TrafficGroups[trafficGroup].Sensors[relSensorName] = state
+	c.TrafficGroups[parsedSensorName[0]].Sensors[parsedSensorName[1]] = state
 	c.Mutex.Unlock()
 }
 
 func (c *Controller) SetTrafficLightState(trafficLight string, state int) {
-	splitTrafficLight := strings.SplitN(trafficLight, "/", 4)
-	splitTrafficGroup := splitTrafficLight[:len(splitTrafficLight) - 1]
-
-	trafficGroup := strings.Join(splitTrafficGroup, "/")
-	relTrafficLight := "/" +  splitTrafficLight[len(splitTrafficLight) - 1]
+	parsedTrafficLight := parseAbsoluteName(trafficLight)
 
 	c.Mutex.Lock()
-	c.TrafficGroups[trafficGroup].Lights[relTrafficLight] = state
+	c.TrafficGroups[parsedTrafficLight[0]].Lights[parsedTrafficLight[1]] = state
 	c.Mutex.Unlock()
 }
 
@@ -647,7 +69,7 @@ func (c *Controller) updateScores() {
 		c.TrafficGroups[trafficGroupName].BaseScore = 0
 		c.Mutex.Unlock()
 
-		if trafficGroup.Lights["/lights/1"] > 0 {
+		if trafficGroup.Lights["/light/1"] > 0 {
 			c.Mutex.Lock()
 			c.TrafficGroups[trafficGroupName].TimeScore = 0
 			c.Mutex.Unlock()
@@ -655,19 +77,25 @@ func (c *Controller) updateScores() {
 			continue
 		}
 
-		for i := 0; i < len(trafficGroup.Sensors); i++ {
-			if trafficGroup.Sensors["/sensor/" + strconv.Itoa(i+1)] {
+		i := 1
+
+		for sensorName := range trafficGroup.Sensors {
+			canonicalSensorName := getCanonicalSensorName(trafficGroupName, sensorName)
+
+			if c.TrafficGroups[canonicalSensorName[0]].Sensors[canonicalSensorName[1]] {
 				c.Mutex.Lock()
-				c.TrafficGroups[trafficGroupName].BaseScore += 1 / float64(i + 1)
+				c.TrafficGroups[trafficGroupName].BaseScore += 1 / float64(i)
 				c.Mutex.Unlock()
 			} else {
 				break
 			}
+
+			i += 1
 		}
 
 		if trafficGroup.BaseScore >= 1 {
 			c.Mutex.Lock()
-			c.TrafficGroups[trafficGroupName].TimeScore += 0.004167
+			c.TrafficGroups[trafficGroupName].TimeScore += 0.0104 // 0.01219 //0.004167
 			c.Mutex.Unlock()
 		}
 	}
@@ -677,14 +105,31 @@ func (c Controller) GenerateSolutions() []TrafficSolution {
 	var solutions []TrafficSolution
 
 	for trafficGroupName, trafficGroup := range c.TrafficGroups {
-		score := trafficGroup.BaseScore * trafficGroup.TimeScore
-		solution := TrafficSolution {
-			[]string { trafficGroupName },
+
+		isValid := true
+
+		for _, exceptionSensor := range trafficGroup.ExceptionSensors {
+			parsedExceptionSensor := parseAbsoluteName(exceptionSensor)
+
+			if c.TrafficGroups[parsedExceptionSensor[0]].Sensors[parsedExceptionSensor[1]] {
+				isValid = false
+				break
+			}
+		}
+
+		if !isValid {
+			continue
+		}
+
+		score := trafficGroup.BaseScore + (-1*math.Sqrt((-1*trafficGroup.TimeScore)+2.5) + 1.6)
+		solution := TrafficSolution{
+			[]string{trafficGroupName},
 			trafficGroup.ExcludedGroups,
 			score,
 		}
-
-		solutions = append(solutions, c.generateSolutionsRecurse(solution))
+		solution = c.generateSolutionsRecurse(solution)
+		// solution.Score = solution.Score / float64(len(solution.TrafficGroups))
+		solutions = append(solutions, solution)
 	}
 
 	sort.Sort(sort.Reverse(ByScore(solutions)))
@@ -693,16 +138,31 @@ func (c Controller) GenerateSolutions() []TrafficSolution {
 }
 
 func (c Controller) generateSolutionsRecurse(currentSolution TrafficSolution) TrafficSolution {
-	currentTrafficGroupName := currentSolution.TrafficGroups[len(currentSolution.TrafficGroups) - 1]
+	currentTrafficGroupName := currentSolution.TrafficGroups[len(currentSolution.TrafficGroups)-1]
 
 	for trafficGroupName, trafficGroup := range c.TrafficGroups {
 		if trafficGroupName != currentTrafficGroupName &&
 			!stringInSlice(trafficGroupName, currentSolution.ExcludedGroups) &&
 			!stringInSlice(trafficGroupName, currentSolution.TrafficGroups) {
 
+			isValid := true
+
+			for _, exceptionSensor := range trafficGroup.ExceptionSensors {
+				parsedExceptionSensor := parseAbsoluteName(exceptionSensor)
+
+				if c.TrafficGroups[parsedExceptionSensor[0]].Sensors[parsedExceptionSensor[1]] {
+					isValid = false
+					break
+				}
+			}
+
+			if !isValid {
+				continue
+			}
+
 			currentSolution.TrafficGroups = append(currentSolution.TrafficGroups, trafficGroupName)
 			currentSolution.ExcludedGroups = append(currentSolution.ExcludedGroups, trafficGroup.ExcludedGroups...)
-			currentSolution.Score += trafficGroup.BaseScore * trafficGroup.TimeScore
+			currentSolution.Score += trafficGroup.BaseScore + (-1*math.Sqrt((-1*trafficGroup.TimeScore)+2.5) + 1.6)
 
 			currentSolution = c.generateSolutionsRecurse(currentSolution)
 		}
@@ -726,7 +186,7 @@ func (c *Controller) process() []mqttMessage {
 					c.TrafficGroups[trafficGroupName].Lights[light] = 1
 					c.Mutex.Unlock()
 
-					messages = append(messages, mqttMessage {
+					messages = append(messages, mqttMessage{
 						"5" + trafficGroupName + light,
 						"1",
 					})
@@ -736,14 +196,23 @@ func (c *Controller) process() []mqttMessage {
 
 		if c.ElapsedTime >= 7000 {
 			for _, trafficGroupName := range c.CurrentSolution.TrafficGroups {
+
+				var state int
+
+				if c.TrafficGroups[trafficGroupName].LightDirection == "RTG" {
+					state = 0
+				} else if c.TrafficGroups[trafficGroupName].LightDirection == "GTR" {
+					state = 2
+				}
+
 				for light := range c.TrafficGroups[trafficGroupName].Lights {
 					c.Mutex.Lock()
-					c.TrafficGroups[trafficGroupName].Lights[light] = 0
+					c.TrafficGroups[trafficGroupName].Lights[light] = state
 					c.Mutex.Unlock()
 
-					messages = append(messages, mqttMessage {
+					messages = append(messages, mqttMessage{
 						"5" + trafficGroupName + light,
-						"0",
+						strconv.Itoa(state),
 					})
 				}
 			}
@@ -760,20 +229,33 @@ func (c *Controller) process() []mqttMessage {
 		solution := solutions[0]
 
 		if solution.Score > 0 {
+			//for name, trafficGroup := range c.TrafficGroups {
+			//	fmt.Println(name + ":", trafficGroup.TimeScore, "-", trafficGroup.BaseScore, "|", trafficGroup.Sensors)
+			//}
+
 			for _, rangeSolution := range solutions {
 				fmt.Println("Groups:", rangeSolution.TrafficGroups, "- Score:", rangeSolution.Score)
 			}
 			fmt.Println()
 
 			for _, trafficGroupName := range solution.TrafficGroups {
+
+				var state int
+
+				if c.TrafficGroups[trafficGroupName].LightDirection == "RTG" {
+					state = 2
+				} else if c.TrafficGroups[trafficGroupName].LightDirection == "GTR" {
+					state = 0
+				}
+
 				for light := range c.TrafficGroups[trafficGroupName].Lights {
 					c.Mutex.Lock()
-					c.TrafficGroups[trafficGroupName].Lights[light] = 2
+					c.TrafficGroups[trafficGroupName].Lights[light] = state
 					c.Mutex.Unlock()
 
-					messages = append(messages, mqttMessage {
+					messages = append(messages, mqttMessage{
 						"5" + trafficGroupName + light,
-						"2",
+						strconv.Itoa(state),
 					})
 				}
 			}
