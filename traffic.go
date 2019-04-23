@@ -179,6 +179,7 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 		[]string{
 			"/motor_vehicle/3",
 			"/motor_vehicle/10",
+			"/motor_vehicle/12",
 			"/cycle/2",
 			"/cycle/3",
 			"/foot/4",
@@ -208,6 +209,7 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/motor_vehicle/6",
 			"/motor_vehicle/10",
 			"/motor_vehicle/11",
+			"/motor_vehicle/12",
 			"/cycle/1",
 			"/cycle/3",
 			"/cycle/4",
@@ -232,6 +234,7 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 		[]string{
 			"/motor_vehicle/2",
 			"/motor_vehicle/6",
+			"/motor_vehicle/12",
 			"/cycle/3",
 			"/cycle/4",
 			"/foot/6",

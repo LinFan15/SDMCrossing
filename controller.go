@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"sync"
@@ -95,7 +94,7 @@ func (c *Controller) updateScores() {
 
 		if trafficGroup.BaseScore >= 1 {
 			c.Mutex.Lock()
-			c.TrafficGroups[trafficGroupName].TimeScore += 0.0104 // 0.01219 //0.004167
+			c.TrafficGroups[trafficGroupName].TimeScore += 0.01219 // 0.0104 0.004167
 			c.Mutex.Unlock()
 		}
 	}
@@ -121,7 +120,7 @@ func (c Controller) GenerateSolutions() []TrafficSolution {
 			continue
 		}
 
-		score := trafficGroup.BaseScore + (-1*math.Sqrt((-1*trafficGroup.TimeScore)+2.5) + 1.6)
+		score := trafficGroup.BaseScore + trafficGroup.TimeScore
 		solution := TrafficSolution{
 			[]string{trafficGroupName},
 			trafficGroup.ExcludedGroups,
@@ -162,7 +161,7 @@ func (c Controller) generateSolutionsRecurse(currentSolution TrafficSolution) Tr
 
 			currentSolution.TrafficGroups = append(currentSolution.TrafficGroups, trafficGroupName)
 			currentSolution.ExcludedGroups = append(currentSolution.ExcludedGroups, trafficGroup.ExcludedGroups...)
-			currentSolution.Score += trafficGroup.BaseScore + (-1*math.Sqrt((-1*trafficGroup.TimeScore)+2.5) + 1.6)
+			currentSolution.Score += trafficGroup.BaseScore + trafficGroup.TimeScore
 
 			currentSolution = c.generateSolutionsRecurse(currentSolution)
 		}
