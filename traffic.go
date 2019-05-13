@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 type TrafficModel map[string]*TrafficGroup
 
@@ -8,6 +11,7 @@ type TrafficGroup struct {
 	Lights           map[string]int
 	Sensors          map[string]bool
 	LightDirection   string
+	Duration         []time.Duration
 	ExcludedGroups   []string
 	ExceptionSensors []string
 	BaseScore        float64
@@ -24,6 +28,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/5",
 			"/motor_vehicle/8",
@@ -45,6 +54,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/5",
 			"/motor_vehicle/6",
@@ -52,6 +66,7 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/motor_vehicle/9",
 			"/motor_vehicle/10",
 			"/motor_vehicle/11",
+			"/motor_vehicle/12",
 			"/cycle/1",
 			"/cycle/3",
 			"/foot/1",
@@ -70,6 +85,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/5",
 			"/motor_vehicle/6",
@@ -98,6 +118,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/3": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/8",
 			"/motor_vehicle/11",
@@ -124,6 +149,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/6": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/1",
 			"/motor_vehicle/2",
@@ -149,12 +179,18 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/3": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/2",
 			"/motor_vehicle/3",
 			"/motor_vehicle/8",
 			"/motor_vehicle/9",
 			"/motor_vehicle/10",
+			"/motor_vehicle/12",
 			"/cycle/2",
 			"/cycle/3",
 			"/foot/3",
@@ -176,6 +212,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/4": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/3",
 			"/motor_vehicle/10",
@@ -200,6 +241,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/1",
 			"/motor_vehicle/2",
@@ -231,6 +277,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/3": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/2",
 			"/motor_vehicle/6",
@@ -258,6 +309,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/6": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/2",
 			"/motor_vehicle/3",
@@ -285,6 +341,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/3": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/2",
 			"/motor_vehicle/3",
@@ -308,10 +369,17 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/7",
 			"/motor_vehicle/8",
 			"/motor_vehicle/9",
+			"/motor_vehicle/2",
+			"/motor_vehicle/6",
 		},
 		[]string{},
 		0,
@@ -327,6 +395,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/vessel/2/sensor/1": false,
 		},
 		"GTR",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/vessel/1",
 			"/vessel/2",
@@ -341,6 +414,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			7 * time.Second,
+			4 * time.Second,
+			1 * time.Second,
+		},
 		[]string{},
 		[]string{},
 		0,
@@ -354,6 +432,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			8 * time.Second,
+			2 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/1",
 			"/motor_vehicle/2",
@@ -374,6 +457,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			8 * time.Second,
+			2 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/3",
 			"/motor_vehicle/4",
@@ -394,6 +482,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			8 * time.Second,
+			2 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/2",
 			"/motor_vehicle/6",
@@ -413,6 +506,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			8 * time.Second,
+			2 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/1",
 			"/motor_vehicle/5",
@@ -435,6 +533,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/vessel/2/sensor/1": false,
 		},
 		"GTR",
+		[]time.Duration{
+			8 * time.Second,
+			2 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/vessel/1",
 			"/vessel/2",
@@ -453,6 +556,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/1",
 			"/motor_vehicle/2",
@@ -472,6 +580,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/4",
 			"/motor_vehicle/8",
@@ -491,6 +604,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/4",
 			"/motor_vehicle/5",
@@ -509,7 +627,12 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 			"/sensor/2": false,
 		},
-		"RTG",
+		"RTG", []time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
+
 		[]string{
 			"/motor_vehicle/3",
 			"/motor_vehicle/7",
@@ -529,6 +652,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/7",
 			"/motor_vehicle/8",
@@ -547,6 +675,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/2",
 			"/motor_vehicle/6",
@@ -566,6 +699,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/9",
 			"/motor_vehicle/10",
@@ -585,6 +723,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/2": false,
 		},
 		"RTG",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/1",
 			"/motor_vehicle/5",
@@ -604,6 +747,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/vessel/2/sensor/1": false,
 		},
 		"GTR",
+		[]time.Duration{
+			6 * time.Second,
+			6 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/vessel/1",
 			"/vessel/2",
@@ -620,6 +768,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			12 * time.Second,
+			2 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/13",
 			"/cycle/5",
@@ -637,6 +790,11 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			"/sensor/1": false,
 		},
 		"RTG",
+		[]time.Duration{
+			12 * time.Second,
+			2 * time.Second,
+			1 * time.Second,
+		},
 		[]string{
 			"/motor_vehicle/13",
 			"/cycle/5",

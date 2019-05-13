@@ -3,12 +3,11 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-
-	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 type mqttMessage struct {
@@ -20,10 +19,14 @@ var con = NewController()
 
 var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	if strings.Contains(msg.Topic(), "sensor") {
-		// fmt.Println("Received: " + msg.Topic() + " - " + string(msg.Payload()))
+		fmt.Println("Received: " + msg.Topic() + " - " + string(msg.Payload()))
 
 		sensorName := msg.Topic()[1:]
 		con.SetSensorState(sensorName, string(msg.Payload()) == "1")
+	}
+
+	if strings.Contains(msg.Topic(), "ondisconnect") {
+		con.SetTrafficLightsInitialState()
 	}
 }
 
@@ -37,6 +40,7 @@ func main() {
 	opts.SetClientID("")
 	opts.SetDefaultPublishHandler(f)
 	opts.SetTLSConfig(&tls.Config{})
+	opts.SetWill("5/features/lifecycle/controller/ondisconnect/", "", byte(1), false)
 	topic := "5/#"
 
 	opts.OnConnect = func(c MQTT.Client) {
@@ -50,6 +54,8 @@ func main() {
 	} else {
 		fmt.Printf("Connected to server\n")
 	}
+
+	client.Publish("5/features/lifecycle/controller/onconnect", byte(1), false, "")
 
 	go con.Loop(mc)
 

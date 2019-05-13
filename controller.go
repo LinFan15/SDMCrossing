@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -14,24 +13,11 @@ type TrafficSolution struct {
 	Score          float64
 }
 
-type ByScore []TrafficSolution
-
-func (s ByScore) Len() int {
-	return len(s)
-}
-
-func (s ByScore) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s ByScore) Less(i, j int) bool {
-	return s[i].Score < s[j].Score
-}
-
 type Controller struct {
 	TrafficGroups   map[string]*TrafficGroup
 	Mutex           *sync.Mutex
 	CurrentSolution TrafficSolution
+	Pending         int
 	InMotion        bool
 	ElapsedTime     int64
 }
@@ -41,6 +27,7 @@ func NewController() Controller {
 		trafficModel,
 		&sync.Mutex{},
 		TrafficSolution{},
+		0,
 		false,
 		0,
 	}
@@ -54,21 +41,102 @@ func (c *Controller) SetSensorState(sensorName string, state bool) {
 	c.Mutex.Unlock()
 }
 
-func (c *Controller) SetTrafficLightState(trafficLight string, state int) {
-	parsedTrafficLight := parseAbsoluteName(trafficLight)
+func (c *Controller) SetTrafficGroupState(trafficGroupName string, state int) []mqttMessage {
+	var messages []mqttMessage
+
+	for light := range c.TrafficGroups[trafficGroupName].Lights {
+		c.Mutex.Lock()
+		c.TrafficGroups[trafficGroupName].Lights[light] = state
+		c.Mutex.Unlock()
+
+		messages = append(messages, mqttMessage{
+			"5" + trafficGroupName + light,
+			strconv.Itoa(state),
+		})
+	}
+
+	return messages
+}
+
+func (c *Controller) SetTrafficLightsInitialState() []mqttMessage {
+	var messages []mqttMessage
+
+	for trafficGroupName, trafficGroup := range c.TrafficGroups {
+
+		var state int
+
+		if trafficGroup.LightDirection == "RTG" {
+			state = 0
+		} else if trafficGroup.LightDirection == "GTR" {
+			state = 2
+		}
+
+		messages = c.SetTrafficGroupState(trafficGroupName, state)
+	}
+
+	c.CurrentSolution = TrafficSolution{}
+	c.ElapsedTime = 0
+	c.InMotion = false
+
+	return messages
+}
+
+func (c *Controller) handleTrafficGroup(trafficGroupName string, mc chan []mqttMessage) {
+	var state int
+	var messages []mqttMessage
+
+	if c.TrafficGroups[trafficGroupName].LightDirection == "RTG" {
+		state = 2
+	} else if c.TrafficGroups[trafficGroupName].LightDirection == "GTR" {
+		state = 0
+	}
+
+	messages = c.SetTrafficGroupState(trafficGroupName, state)
+	mc <- messages
+
+	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[0])
+
+	state = 1
+	messages = c.SetTrafficGroupState(trafficGroupName, state)
+	mc <- messages
+
+	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[1])
+
+	if c.TrafficGroups[trafficGroupName].LightDirection == "RTG" {
+		state = 0
+	} else if c.TrafficGroups[trafficGroupName].LightDirection == "GTR" {
+		state = 2
+	}
+
+	messages = c.SetTrafficGroupState(trafficGroupName, state)
+	mc <- messages
+
+	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[2])
 
 	c.Mutex.Lock()
-	c.TrafficGroups[parsedTrafficLight[0]].Lights[parsedTrafficLight[1]] = state
+	c.Pending -= 1
 	c.Mutex.Unlock()
+
+	return
 }
 
 func (c *Controller) updateScores() {
 	for trafficGroupName, trafficGroup := range c.TrafficGroups {
+		if len(trafficGroup.Lights) == 0 {
+			continue
+		}
+
 		c.Mutex.Lock()
 		c.TrafficGroups[trafficGroupName].BaseScore = 0
 		c.Mutex.Unlock()
 
-		if trafficGroup.Lights["/light/1"] > 0 {
+		if trafficGroup.LightDirection == "RTG" && trafficGroup.Lights["/light/1"] > 0 {
+			c.Mutex.Lock()
+			c.TrafficGroups[trafficGroupName].TimeScore = 0
+			c.Mutex.Unlock()
+
+			continue
+		} else if trafficGroup.LightDirection == "GTR" && trafficGroup.Lights["/light/1"] < 2 {
 			c.Mutex.Lock()
 			c.TrafficGroups[trafficGroupName].TimeScore = 0
 			c.Mutex.Unlock()
@@ -76,20 +144,15 @@ func (c *Controller) updateScores() {
 			continue
 		}
 
-		i := 1
-
 		for sensorName := range trafficGroup.Sensors {
 			canonicalSensorName := getCanonicalSensorName(trafficGroupName, sensorName)
+			sensorNumber, _ := strconv.Atoi(canonicalSensorName[1][len(canonicalSensorName[1])-1:])
 
 			if c.TrafficGroups[canonicalSensorName[0]].Sensors[canonicalSensorName[1]] {
 				c.Mutex.Lock()
-				c.TrafficGroups[trafficGroupName].BaseScore += 1 / float64(i)
+				c.TrafficGroups[trafficGroupName].BaseScore += 1 / float64(sensorNumber)
 				c.Mutex.Unlock()
-			} else {
-				break
 			}
-
-			i += 1
 		}
 
 		if trafficGroup.BaseScore >= 1 {
@@ -100,8 +163,8 @@ func (c *Controller) updateScores() {
 	}
 }
 
-func (c Controller) GenerateSolutions() []TrafficSolution {
-	var solutions []TrafficSolution
+func (c Controller) GenerateSolution() TrafficSolution {
+	var currentSolution TrafficSolution
 
 	for trafficGroupName, trafficGroup := range c.TrafficGroups {
 
@@ -116,27 +179,46 @@ func (c Controller) GenerateSolutions() []TrafficSolution {
 			}
 		}
 
+		for _, sensor := range trafficGroup.Sensors {
+			if sensor {
+				isValid = true
+				break
+			} else {
+				isValid = false
+			}
+		}
+
 		if !isValid {
 			continue
 		}
 
 		score := trafficGroup.BaseScore + trafficGroup.TimeScore
+
 		solution := TrafficSolution{
 			[]string{trafficGroupName},
 			trafficGroup.ExcludedGroups,
 			score,
 		}
-		solution = c.generateSolutionsRecurse(solution)
-		// solution.Score = solution.Score / float64(len(solution.TrafficGroups))
-		solutions = append(solutions, solution)
+
+		fmt.Println("Group:", trafficGroupName, " - Score:", trafficGroup.BaseScore, trafficGroup.TimeScore)
+
+		if solution.Score > currentSolution.Score {
+			currentSolution = solution
+		}
 	}
 
-	sort.Sort(sort.Reverse(ByScore(solutions)))
+	solution := c.generateSolutionsRecurse(currentSolution)
+	// solution.Score = solution.Score / float64(len(solution.TrafficGroups))
 
-	return solutions
+	return solution
 }
 
 func (c Controller) generateSolutionsRecurse(currentSolution TrafficSolution) TrafficSolution {
+	if currentSolution.Score == 0 {
+		return currentSolution
+	}
+
+	var newSolution TrafficSolution
 	currentTrafficGroupName := currentSolution.TrafficGroups[len(currentSolution.TrafficGroups)-1]
 
 	for trafficGroupName, trafficGroup := range c.TrafficGroups {
@@ -155,108 +237,68 @@ func (c Controller) generateSolutionsRecurse(currentSolution TrafficSolution) Tr
 				}
 			}
 
+			for _, sensor := range trafficGroup.Sensors {
+				if sensor {
+					isValid = true
+					break
+				} else {
+					isValid = false
+				}
+			}
+
 			if !isValid {
 				continue
 			}
 
-			currentSolution.TrafficGroups = append(currentSolution.TrafficGroups, trafficGroupName)
-			currentSolution.ExcludedGroups = append(currentSolution.ExcludedGroups, trafficGroup.ExcludedGroups...)
-			currentSolution.Score += trafficGroup.BaseScore + trafficGroup.TimeScore
+			solution := TrafficSolution{
+				append(currentSolution.TrafficGroups, trafficGroupName),
+				append(currentSolution.ExcludedGroups, trafficGroup.ExcludedGroups...),
+				currentSolution.Score + trafficGroup.BaseScore + trafficGroup.TimeScore,
+			}
 
-			currentSolution = c.generateSolutionsRecurse(currentSolution)
+			if solution.Score > newSolution.Score {
+				newSolution = solution
+			}
 		}
 	}
 
-	return currentSolution
+	if newSolution.Score == 0 {
+		return currentSolution
+	}
+
+	newSolution = c.generateSolutionsRecurse(newSolution)
+
+	return newSolution
 }
 
-func (c *Controller) process() []mqttMessage {
-	var messages []mqttMessage
-
+func (c *Controller) process(mc chan []mqttMessage) {
 	c.updateScores()
 
 	if c.InMotion {
 		c.ElapsedTime += 500
 
-		if c.ElapsedTime >= 5000 && c.TrafficGroups[c.CurrentSolution.TrafficGroups[0]].Lights["/light/1"] == 2 {
-			for _, trafficGroupName := range c.CurrentSolution.TrafficGroups {
-				for light := range c.TrafficGroups[trafficGroupName].Lights {
-					c.Mutex.Lock()
-					c.TrafficGroups[trafficGroupName].Lights[light] = 1
-					c.Mutex.Unlock()
-
-					messages = append(messages, mqttMessage{
-						"5" + trafficGroupName + light,
-						"1",
-					})
-				}
-			}
-		}
-
-		if c.ElapsedTime >= 7000 {
-			for _, trafficGroupName := range c.CurrentSolution.TrafficGroups {
-
-				var state int
-
-				if c.TrafficGroups[trafficGroupName].LightDirection == "RTG" {
-					state = 0
-				} else if c.TrafficGroups[trafficGroupName].LightDirection == "GTR" {
-					state = 2
-				}
-
-				for light := range c.TrafficGroups[trafficGroupName].Lights {
-					c.Mutex.Lock()
-					c.TrafficGroups[trafficGroupName].Lights[light] = state
-					c.Mutex.Unlock()
-
-					messages = append(messages, mqttMessage{
-						"5" + trafficGroupName + light,
-						strconv.Itoa(state),
-					})
-				}
-			}
-
-			c.CurrentSolution = TrafficSolution{}
-			c.ElapsedTime = 0
-			c.InMotion = false
+		if c.Pending == 0 {
+			mc <- c.SetTrafficLightsInitialState()
 		}
 
 	} else {
 		c.ElapsedTime = 0
 
-		solutions := c.GenerateSolutions()
-		solution := solutions[0]
+		solution := c.GenerateSolution()
 
 		if solution.Score > 0 {
 			//for name, trafficGroup := range c.TrafficGroups {
 			//	fmt.Println(name + ":", trafficGroup.TimeScore, "-", trafficGroup.BaseScore, "|", trafficGroup.Sensors)
 			//}
 
-			for _, rangeSolution := range solutions {
-				fmt.Println("Groups:", rangeSolution.TrafficGroups, "- Score:", rangeSolution.Score)
-			}
+			fmt.Println("Groups:", solution.TrafficGroups, "- Score:", solution.Score)
 			fmt.Println()
+
+			c.Pending = len(solution.TrafficGroups)
 
 			for _, trafficGroupName := range solution.TrafficGroups {
 
-				var state int
-
-				if c.TrafficGroups[trafficGroupName].LightDirection == "RTG" {
-					state = 2
-				} else if c.TrafficGroups[trafficGroupName].LightDirection == "GTR" {
-					state = 0
-				}
-
-				for light := range c.TrafficGroups[trafficGroupName].Lights {
-					c.Mutex.Lock()
-					c.TrafficGroups[trafficGroupName].Lights[light] = state
-					c.Mutex.Unlock()
-
-					messages = append(messages, mqttMessage{
-						"5" + trafficGroupName + light,
-						strconv.Itoa(state),
-					})
-				}
+				go c.handleTrafficGroup(trafficGroupName, mc)
 			}
 
 			c.CurrentSolution = solution
@@ -266,13 +308,11 @@ func (c *Controller) process() []mqttMessage {
 		}
 
 	}
-
-	return messages
 }
 
 func (c Controller) Loop(mc chan []mqttMessage) {
 	for {
 		time.Sleep(500 * time.Millisecond)
-		mc <- c.process()
+		c.process(mc)
 	}
 }
