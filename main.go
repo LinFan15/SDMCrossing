@@ -26,7 +26,7 @@ var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	}
 
 	if strings.Contains(msg.Topic(), "ondisconnect") {
-		con.SetTrafficLightsInitialState()
+		con.SetTrafficItemsInitialState()
 	}
 }
 
