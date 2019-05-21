@@ -1,9 +1,16 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"time"
 )
+
+type TrafficChange struct {
+	CanonicalName [2]string
+	ChangeType    string
+	State         float64
+}
 
 type TrafficModel map[string]*TrafficGroup
 
@@ -890,6 +897,7 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 			6 * time.Second,
 			4 * time.Second,
 			10 * time.Second,
+			30 * time.Second,
 		},
 		[]string{},
 		[]string{},
@@ -897,6 +905,25 @@ var trafficModel TrafficModel = map[string]*TrafficGroup{
 		0,
 		0,
 	},
+}
+
+func handleTrafficChanges(con Controller, ch chan TrafficChange, quit chan os.Signal) {
+	for {
+		select {
+		case change := <-ch:
+			if change.ChangeType == "sensor" {
+				con.TrafficGroups[change.CanonicalName[0]].Sensors[change.CanonicalName[1]] = change.State == float64(1)
+			} else if change.ChangeType == "item" {
+				con.TrafficGroups[change.CanonicalName[0]].Items[change.CanonicalName[1]].State = int(change.State)
+			} else if change.ChangeType == "baseScore" {
+				con.TrafficGroups[change.CanonicalName[0]].BaseScore = change.State
+			} else if change.ChangeType == "timeScore" {
+				con.TrafficGroups[change.CanonicalName[0]].TimeScore = change.State
+			}
+		case <-quit:
+			return
+		}
+	}
 }
 
 func getTrafficItemFromGroup(groupName string) TrafficItem {

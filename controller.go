@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -15,7 +14,7 @@ type TrafficSolution struct {
 
 type Controller struct {
 	TrafficGroups     map[string]*TrafficGroup
-	Mutex             *sync.Mutex
+	ChangesChannel    chan TrafficChange
 	CurrentSolution   TrafficSolution
 	Pending           int
 	AssociatedPending []string
@@ -23,10 +22,10 @@ type Controller struct {
 	ElapsedTime       int64
 }
 
-func NewController() Controller {
+func NewController(ch chan TrafficChange) Controller {
 	return Controller{
 		trafficModel,
-		&sync.Mutex{},
+		ch,
 		TrafficSolution{},
 		0,
 		[]string{},
@@ -38,17 +37,27 @@ func NewController() Controller {
 func (c *Controller) SetSensorState(sensorName string, state bool) {
 	parsedSensorName := parseAbsoluteName(sensorName)
 
-	c.Mutex.Lock()
-	c.TrafficGroups[parsedSensorName[0]].Sensors[parsedSensorName[1]] = state
-	c.Mutex.Unlock()
+	newState := 0
+
+	if state {
+		newState = 1
+	}
+
+	c.ChangesChannel <- TrafficChange{
+		parsedSensorName,
+		"sensor",
+		float64(newState),
+	}
 }
 
 func (c *Controller) SetTrafficItemState(trafficGroup string, trafficItem string, state int) []mqttMessage {
 	var messages []mqttMessage
 
-	c.Mutex.Lock()
-	c.TrafficGroups[trafficGroup].Items[trafficItem].State = state
-	c.Mutex.Unlock()
+	c.ChangesChannel <- TrafficChange{
+		[2]string{trafficGroup, trafficItem},
+		"item",
+		float64(state),
+	}
 
 	messages = append(messages, mqttMessage{
 		"5" + trafficGroup + trafficItem,
@@ -171,9 +180,7 @@ func (c *Controller) handleTrafficGroup(trafficGroupName string, mc chan []mqttM
 	if trafficGroupName[:7] == "/bridge" {
 		c.handleBridge(trafficGroupName, mc)
 		if stringInSlice(trafficGroupName, c.AssociatedPending) {
-			c.Mutex.Lock()
-			delFromSlice(indexOfStringInSlice(trafficGroupName, c.AssociatedPending), c.AssociatedPending)
-			c.Mutex.Unlock()
+			c.AssociatedPending = delFromSlice(indexOfStringInSlice(trafficGroupName, c.AssociatedPending), c.AssociatedPending)
 		}
 		return
 	}
@@ -181,9 +188,7 @@ func (c *Controller) handleTrafficGroup(trafficGroupName string, mc chan []mqttM
 	if len(c.TrafficGroups[trafficGroupName].AssociatedGroups) > 0 {
 		for _, associatedGroupName := range c.TrafficGroups[trafficGroupName].AssociatedGroups {
 			if !stringInSlice(associatedGroupName, c.AssociatedPending) {
-				c.Mutex.Lock()
 				c.AssociatedPending = append(c.AssociatedPending, associatedGroupName)
-				c.Mutex.Unlock()
 
 				go c.handleAssociatedTrafficGroup(associatedGroupName, mc)
 
@@ -199,7 +204,6 @@ func (c *Controller) handleTrafficGroup(trafficGroupName string, mc chan []mqttM
 	}
 
 	messages = c.SetTrafficGroupState(trafficGroupName, 2)
-
 	mc <- messages
 
 	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[0])
@@ -214,10 +218,7 @@ func (c *Controller) handleTrafficGroup(trafficGroupName string, mc chan []mqttM
 
 	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[2])
 
-	c.Mutex.Lock()
 	c.Pending -= 1
-	c.Mutex.Unlock()
-
 	return
 }
 
@@ -227,9 +228,7 @@ func (c *Controller) handleAssociatedTrafficGroup(trafficGroupName string, mc ch
 	if trafficGroupName[:7] == "/bridge" {
 		c.handleBridge(trafficGroupName, mc)
 		if stringInSlice(trafficGroupName, c.AssociatedPending) {
-			c.Mutex.Lock()
-			delFromSlice(indexOfStringInSlice(trafficGroupName, c.AssociatedPending), c.AssociatedPending)
-			c.Mutex.Unlock()
+			c.AssociatedPending = delFromSlice(indexOfStringInSlice(trafficGroupName, c.AssociatedPending), c.AssociatedPending)
 		}
 		return
 	}
@@ -237,9 +236,7 @@ func (c *Controller) handleAssociatedTrafficGroup(trafficGroupName string, mc ch
 	if len(c.TrafficGroups[trafficGroupName].AssociatedGroups) > 0 {
 		for _, associatedGroupName := range c.TrafficGroups[trafficGroupName].AssociatedGroups {
 			if !stringInSlice(associatedGroupName, c.AssociatedPending) {
-				c.Mutex.Lock()
 				c.AssociatedPending = append(c.AssociatedPending, associatedGroupName)
-				c.Mutex.Unlock()
 			}
 
 			go c.handleAssociatedTrafficGroup(associatedGroupName, mc)
@@ -267,9 +264,7 @@ func (c *Controller) handleAssociatedTrafficGroup(trafficGroupName string, mc ch
 	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[2])
 
 	if stringInSlice(trafficGroupName, c.AssociatedPending) {
-		c.Mutex.Lock()
-		delFromSlice(indexOfStringInSlice(trafficGroupName, c.AssociatedPending), c.AssociatedPending)
-		c.Mutex.Unlock()
+		c.AssociatedPending = delFromSlice(indexOfStringInSlice(trafficGroupName, c.AssociatedPending), c.AssociatedPending)
 	}
 }
 
@@ -337,6 +332,8 @@ func (c *Controller) handleBridge(trafficGroupName string, mc chan []mqttMessage
 			wasGreen = true
 			messages = c.SetVesselGroupState(vesselGroup, 2)
 			mc <- messages
+
+			time.Sleep(100 * time.Millisecond)
 		}
 
 		if wasGreen {
@@ -376,7 +373,7 @@ func (c *Controller) handleBridge(trafficGroupName string, mc chan []mqttMessage
 	}
 
 	mc <- messages
-	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[0])
+	time.Sleep(c.TrafficGroups[trafficGroupName].Duration[3])
 }
 
 func (c *Controller) updateScores() {
@@ -385,28 +382,37 @@ func (c *Controller) updateScores() {
 			continue
 		}
 
-		c.Mutex.Lock()
-		c.TrafficGroups[trafficGroupName].BaseScore = 0
-		c.Mutex.Unlock()
+		c.ChangesChannel <- TrafficChange{
+			[2]string{trafficGroupName, ""},
+			"baseScore",
+			0,
+		}
 
 		trafficItem := getTrafficItemFromGroup(trafficGroupName)
 
 		if (trafficItem.Type == "RTG" || trafficItem.Type == "GR") && trafficItem.State > 0 {
-			c.Mutex.Lock()
-			c.TrafficGroups[trafficGroupName].TimeScore = 0
-			c.Mutex.Unlock()
+			c.ChangesChannel <- TrafficChange{
+				[2]string{trafficGroupName, ""},
+				"timeScore",
+				0,
+			}
 
 			continue
 		} else if (trafficItem.Type == "GTR") && trafficItem.State < 2 {
-			c.Mutex.Lock()
-			c.TrafficGroups[trafficGroupName].TimeScore = 0
-			c.Mutex.Unlock()
+			c.ChangesChannel <- TrafficChange{
+				[2]string{trafficGroupName, ""},
+				"timeScore",
+				0,
+			}
 
 			continue
 		} else if trafficItem.Type == "RG" && trafficItem.State != 1 {
-			c.Mutex.Lock()
-			c.TrafficGroups[trafficGroupName].TimeScore = 0
-			c.Mutex.Unlock()
+			c.ChangesChannel <- TrafficChange{
+				[2]string{trafficGroupName, ""},
+				"timeScore",
+				0,
+			}
+			continue
 		}
 
 		for sensorName := range trafficGroup.Sensors {
@@ -414,16 +420,20 @@ func (c *Controller) updateScores() {
 			sensorNumber, _ := strconv.Atoi(canonicalSensorName[1][len(canonicalSensorName[1])-1:])
 
 			if c.TrafficGroups[canonicalSensorName[0]].Sensors[canonicalSensorName[1]] {
-				c.Mutex.Lock()
-				c.TrafficGroups[trafficGroupName].BaseScore += 1 / float64(sensorNumber)
-				c.Mutex.Unlock()
+				c.ChangesChannel <- TrafficChange{
+					[2]string{trafficGroupName, ""},
+					"baseScore",
+					c.TrafficGroups[trafficGroupName].BaseScore + 1/float64(sensorNumber),
+				}
 			}
 		}
 
 		if trafficGroup.BaseScore >= 1 {
-			c.Mutex.Lock()
-			c.TrafficGroups[trafficGroupName].TimeScore += 0.01219 // 0.0104 0.004167
-			c.Mutex.Unlock()
+			c.ChangesChannel <- TrafficChange{
+				[2]string{trafficGroupName, ""},
+				"timeScore",
+				c.TrafficGroups[trafficGroupName].TimeScore + 0.01219,
+			}
 		}
 	}
 }
@@ -547,6 +557,8 @@ func (c Controller) generateSolutionsRecurse(currentSolution TrafficSolution) Tr
 func (c *Controller) process(mc chan []mqttMessage) {
 	c.updateScores()
 
+	//fmt.Println(c.Pending)
+
 	if c.Pending == 0 {
 		c.InMotion = false
 	}
@@ -564,7 +576,7 @@ func (c *Controller) process(mc chan []mqttMessage) {
 			//}
 
 			fmt.Println("Groups:", solution.TrafficGroups, "- Score:", solution.Score)
-			fmt.Println()
+			//fmt.Println()
 
 			c.Pending = len(solution.TrafficGroups)
 

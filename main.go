@@ -15,7 +15,8 @@ type mqttMessage struct {
 	payload string
 }
 
-var con = NewController()
+var ch = make(chan TrafficChange)
+var con = NewController(ch)
 
 var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
 	if strings.Contains(msg.Topic(), "sensor") {
@@ -57,12 +58,14 @@ func main() {
 
 	client.Publish("5/features/lifecycle/controller/onconnect", byte(1), false, "")
 
+	go handleTrafficChanges(con, ch, quit)
 	go con.Loop(mc)
 
 	for {
 		select {
 		case msgs := <-mc:
 			for _, msg := range msgs {
+				fmt.Println("Sent:", msg.topic, "-", msg.payload)
 				client.Publish(msg.topic, byte(1), false, msg.payload)
 			}
 		case <-quit:
