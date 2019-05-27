@@ -273,7 +273,7 @@ func (c *Controller) handleBridge(trafficGroupName string, mc chan []mqttMessage
 
 	for trafficItemName := range c.TrafficGroups[trafficGroupName].Items {
 		if trafficItemName[:6] == "/light" {
-			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 1)...)
+			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 0)...)
 		}
 	}
 
@@ -296,7 +296,7 @@ func (c *Controller) handleBridge(trafficGroupName string, mc chan []mqttMessage
 
 	for trafficItemName := range c.TrafficGroups[trafficGroupName].Items {
 		if trafficItemName[:5] == "/deck" {
-			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 1)...)
+			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 0)...)
 		}
 	}
 
@@ -346,7 +346,7 @@ func (c *Controller) handleBridge(trafficGroupName string, mc chan []mqttMessage
 
 	for trafficItemName := range c.TrafficGroups[trafficGroupName].Items {
 		if trafficItemName[:5] == "/deck" {
-			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 0)...)
+			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 1)...)
 		}
 	}
 
@@ -368,7 +368,7 @@ func (c *Controller) handleBridge(trafficGroupName string, mc chan []mqttMessage
 
 	for trafficItemName := range c.TrafficGroups[trafficGroupName].Items {
 		if trafficItemName[:6] == "/light" {
-			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 0)...)
+			messages = append(messages, c.SetTrafficItemState(trafficGroupName, trafficItemName, 2)...)
 		}
 	}
 
@@ -454,13 +454,30 @@ func (c Controller) GenerateSolution() TrafficSolution {
 			}
 		}
 
-		for _, sensor := range trafficGroup.Sensors {
-			if sensor {
-				isValid = true
-				break
-			} else {
-				isValid = false
+		if isValid {
+			for _, sensor := range trafficGroup.Sensors {
+				if sensor {
+					isValid = true
+					break
+				} else {
+					isValid = false
+				}
 			}
+		}
+
+		if isValid {
+			for trafficItemName := range trafficGroup.Items {
+				if trafficItemName[:6] == "/light" {
+					isValid = true
+					break
+				} else {
+					isValid = false
+				}
+			}
+		}
+
+		if len(trafficGroup.Items) == 0 {
+			isValid = false
 		}
 
 		if trafficGroupName[:7] == "/bridge" {
@@ -516,13 +533,30 @@ func (c Controller) generateSolutionsRecurse(currentSolution TrafficSolution) Tr
 				}
 			}
 
-			for _, sensor := range trafficGroup.Sensors {
-				if sensor {
-					isValid = true
-					break
-				} else {
-					isValid = false
+			if isValid {
+				for _, sensor := range trafficGroup.Sensors {
+					if sensor {
+						isValid = true
+						break
+					} else {
+						isValid = false
+					}
 				}
+			}
+
+			if isValid {
+				for trafficItemName := range trafficGroup.Items {
+					if trafficItemName[:6] == "/light" {
+						isValid = true
+						break
+					} else {
+						isValid = false
+					}
+				}
+			}
+
+			if len(trafficGroup.Items) == 0 {
+				isValid = false
 			}
 
 			if trafficGroupName[:7] == "/bridge" {
